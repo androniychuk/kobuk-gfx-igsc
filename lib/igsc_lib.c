@@ -266,6 +266,19 @@ exit:
     return status;
 }
 
+#ifdef _DEBUG
+static void gsc_suppress_errors(struct igsc_lib_ctx *lib_ctx)
+{
+    (void)lib_ctx;
+    return;
+}
+
+static void gsc_unsuppress_errors(struct igsc_lib_ctx *lib_ctx)
+{
+    (void)lib_ctx;
+    return;
+}
+#else
 static void gsc_suppress_errors(struct igsc_lib_ctx *lib_ctx)
 {
     lib_ctx->suppress_errors = true;
@@ -280,6 +293,7 @@ static void gsc_unsuppress_errors(struct igsc_lib_ctx *lib_ctx)
 
     TeeSetLogLevel(&lib_ctx->driver_handle, lib_ctx->tee_prev_log_level);
 }
+#endif
 
 static bool gsc_errors_suppressed(struct igsc_lib_ctx *lib_ctx)
 {
@@ -3750,4 +3764,45 @@ int igsc_device_oem_version(IN  struct igsc_device_handle *handle,
 
     version->length = (uint16_t) received_version_size;
     return ret;
+}
+
+int igsc_read_fw_status_reg(IN struct igsc_device_handle *handle,
+                            IN uint32_t fwsts_index,
+                            OUT uint32_t *fwsts_value)
+{
+    int status;
+    struct igsc_lib_ctx *lib_ctx;
+
+    if (!handle || !handle->ctx || !fwsts_value || fwsts_index > IGSC_MAX_FW_STATUS_INDEX)
+    {
+        gsc_error("Bad parameters\n");
+        return IGSC_ERROR_INVALID_PARAMETER;
+    }
+
+    lib_ctx = handle->ctx;
+
+    gsc_debug("read fw status: initializing driver\n");
+
+    status = gsc_driver_init(lib_ctx, &GUID_METEE_FWU);
+    if (status != IGSC_SUCCESS)
+    {
+        gsc_error("Cannot initialize HECI client, status %d\n", status);
+        return status;
+    }
+
+    status = get_fwsts(lib_ctx, fwsts_index, fwsts_value);
+    if (status != IGSC_SUCCESS)
+    {
+        gsc_error("Invalid HECI message response %d\n", status);
+        goto exit;
+    }
+
+    gsc_debug("fw_sts[%u] = 0x%x\n", fwsts_index, *fwsts_value);
+
+exit:
+    gsc_driver_deinit(lib_ctx);
+
+    gsc_debug("ret = %d\n", status);
+
+    return status;
 }
