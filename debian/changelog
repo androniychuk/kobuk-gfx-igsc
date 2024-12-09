@@ -1,3 +1,9 @@
+igsc (0.9.4-0ubuntu1~24.10~ppa2) oracular; urgency=medium
+
+  * Enable docs
+
+ -- Pavel Androniychuk <pavel.androniychuk@intel.com>  Mon, 09 Dec 2024 14:38:03 -0800
+
 igsc (0.9.4-0ubuntu1~24.10~ppa1) oracular; urgency=medium
 
   * Version bump to 0.9.4 
